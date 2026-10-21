@@ -1,4 +1,3 @@
-
 import { useState } from 'react'
 import './App.css'
 
@@ -30,7 +29,6 @@ const operationMap: Record<string, Operation> = {
   '−': 'subtract',
   '×': 'multiply',
   '÷': 'divide',
-  '%': 'percentage',
 }
 
 async function calculateWithAPI(
@@ -58,11 +56,11 @@ async function calculateWithAPI(
   const data: ApiResponse = await response.json()
 
   if (!response.ok) {
-    throw new Error(data.error || 'Não foi possível calcular.')
+    throw new Error(data.error || 'Unable to calculate.')
   }
 
   if (typeof data.result !== 'number' || !Number.isFinite(data.result)) {
-    throw new Error('A API retornou um resultado inválido.')
+    throw new Error('The API returned an invalid result.')
   }
 
   return data.result
@@ -81,6 +79,7 @@ function App() {
     useState<Operation | null>(null)
   const [startNewNumber, setStartNewNumber] = useState(false)
   const [isCalculating, setIsCalculating] = useState(false)
+  const [percentageInput, setPercentageInput] = useState<string | null>(null)
 
   function resetCalculator() {
     setExpression('')
@@ -90,118 +89,120 @@ function App() {
     setPendingOperation(null)
     setStartNewNumber(false)
     setIsCalculating(false)
+    setPercentageInput(null)
   }
 
-function enterNumber(key: string) {
-  if (result.startsWith('Error:') || result.startsWith('Erro:')) {
-    setResult('0');
-    setExpression('');
-    setCurrentInput(key === '.' ? '0.' : key);
-    setFirstOperand(null);
-    setPendingOperation(null);
-    setStartNewNumber(false);
-    return;
-  }
+  function enterNumber(key: string) {
+    if (result.startsWith('Error:')) {
+      setResult('0')
+      setExpression('')
+      setCurrentInput(key === '.' ? '0.' : key)
+      setFirstOperand(null)
+      setPendingOperation(null)
+      setStartNewNumber(false)
+      setPercentageInput(null)
+      return
+    }
 
-  if (key === '.' && !startNewNumber && currentInput.includes('.')) {
-    return;
-  }
+    if (key === '.' && !startNewNumber && currentInput.includes('.')) {
+      return
+    }
 
-  if (startNewNumber) {
-    const newValue = key === '.' ? '0.' : key;
+    if (startNewNumber) {
+      const newValue = key === '.' ? '0.' : key
 
-    setCurrentInput(newValue);
+      setCurrentInput(newValue)
+      setExpression((current) =>
+        pendingOperation === null ? newValue : current + newValue,
+      )
+      setStartNewNumber(false)
+      setPercentageInput(null)
+      return
+    }
+
+    const newValue =
+      key === '.'
+        ? currentInput === ''
+          ? '0.'
+          : currentInput + '.'
+        : currentInput === '0'
+          ? key
+          : currentInput + key
+
+    setCurrentInput(newValue)
     setExpression((current) =>
-      pendingOperation === null
-        ? newValue
-        : current + newValue
-    );
-    setStartNewNumber(false);
-    return;
+      currentInput === '' && key === '.'
+        ? current + '0.'
+        : current + key,
+    )
+    setPercentageInput(null)
   }
 
-  const newValue =
-    key === '.'
-      ? currentInput === ''
-        ? '0.'
-        : currentInput + '.'
-      : currentInput === '0'
-        ? key
-        : currentInput + key;
+  async function chooseOperation(key: string) {
+    const operation = operationMap[key]
 
-  setCurrentInput(newValue);
-  setExpression((current) =>
-    currentInput === '' && key === '.'
-      ? current + '0.'
-      : current + key
-  );
-}
+    if (!operation || isCalculating) return
 
+    if (pendingOperation !== null && firstOperand !== null) {
+      if (currentInput === '') {
+        setPendingOperation(operation)
+        setExpression(`${formatNumber(firstOperand)} ${key} `)
+        setStartNewNumber(true)
+        setPercentageInput(null)
+        return
+      }
 
-async function chooseOperation(key: string) {
-  const operation = operationMap[key];
+      const secondOperand = Number(currentInput)
 
-  if (!operation || isCalculating) return;
+      if (!Number.isFinite(secondOperand)) return
 
-  if (pendingOperation !== null && firstOperand !== null) {
-    if (currentInput === '') {
-      setPendingOperation(operation);
-      setExpression(`${formatNumber(firstOperand)} ${key} `);
-      setStartNewNumber(true);
-      return;
+      setIsCalculating(true)
+
+      try {
+        const answer = await calculateWithAPI(
+          pendingOperation,
+          firstOperand,
+          secondOperand,
+        )
+
+        const formatted = formatNumber(answer)
+
+        setFirstOperand(answer)
+        setPendingOperation(operation)
+        setCurrentInput('')
+        setResult(formatted)
+        setExpression(`${formatted} ${key} `)
+        setStartNewNumber(true)
+        setPercentageInput(null)
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'Unable to calculate.'
+
+        setResult(`Error: ${message}`)
+      } finally {
+        setIsCalculating(false)
+      }
+
+      return
     }
 
-    const secondOperand = Number(currentInput);
+    const valueText = currentInput || result
 
-    if (!Number.isFinite(secondOperand)) return;
+    if (valueText.startsWith('Error:')) return
 
-    setIsCalculating(true);
+    const value = Number(valueText)
 
-    try {
-      const answer = await calculateWithAPI(
-        pendingOperation,
-        firstOperand,
-        secondOperand
-      );
+    if (!Number.isFinite(value)) return
 
-      const formatted = formatNumber(answer);
-
-      setFirstOperand(answer);
-      setPendingOperation(operation);
-      setCurrentInput('');
-      setResult(formatted);
-      setExpression(`${formatted} ${key} `);
-      setStartNewNumber(true);
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : 'Não foi possível calcular.';
-
-      setResult(`Erro: ${message}`);
-    } finally {
-      setIsCalculating(false);
-    }
-
-    return;
+    setFirstOperand(value)
+    setPendingOperation(operation)
+    setCurrentInput('')
+    setExpression(`${formatNumber(value)} ${key} `)
+    setStartNewNumber(true)
+    setPercentageInput(null)
   }
-
-  const valueText = currentInput || result;
-
-  if (valueText.startsWith('Erro:') || valueText.startsWith('Error:')) {
-    return;
-  }
-
-  const value = Number(valueText);
-
-  if (!Number.isFinite(value)) return;
-
-  setFirstOperand(value);
-  setPendingOperation(operation);
-  setCurrentInput('');
-  setExpression(`${formatNumber(value)} ${key} `);
-  setStartNewNumber(true);
-}
 
   async function calculateResult() {
     if (
@@ -213,16 +214,22 @@ async function chooseOperation(key: string) {
       return
     }
 
-    const secondOperand = Number(currentInput)
+    const inputValue = Number(currentInput)
     const operation = pendingOperation
     const first = firstOperand
-    const displayedExpression =
-      `${formatNumber(first)} ${getOperationSymbol(operation)} ${currentInput} =`
 
-    if (!Number.isFinite(secondOperand)) {
-      setResult('Erro: número inválido')
+    if (!Number.isFinite(inputValue)) {
+      setResult('Error: Invalid number')
       return
     }
+
+    const displayedValue =
+      percentageInput !== null
+        ? `${percentageInput}%`
+        : formatNumber(inputValue)
+
+    const displayedExpression =
+      `${formatNumber(first)} ${getOperationSymbol(operation)} ${displayedValue} =`
 
     setIsCalculating(true)
 
@@ -230,8 +237,9 @@ async function chooseOperation(key: string) {
       const answer = await calculateWithAPI(
         operation,
         first,
-        secondOperand,
+        inputValue,
       )
+
       const formatted = formatNumber(answer)
 
       setExpression(displayedExpression)
@@ -240,12 +248,13 @@ async function chooseOperation(key: string) {
       setFirstOperand(null)
       setPendingOperation(null)
       setStartNewNumber(true)
+      setPercentageInput(null)
     } catch (error) {
       setResult(
-        `Erro: ${
+        `Error: ${
           error instanceof Error
             ? error.message
-            : 'Não foi possível calcular.'
+            : 'Unable to calculate.'
         }`,
       )
     } finally {
@@ -254,20 +263,16 @@ async function chooseOperation(key: string) {
   }
 
   async function calculateSquareRoot() {
-    if (isCalculating) {
-      return
-    }
+    if (isCalculating) return
 
     const valueText = currentInput || result
 
-    if (valueText.startsWith('Erro:')) {
-      return
-    }
+    if (valueText.startsWith('Error:')) return
 
     const value = Number(valueText)
 
     if (!Number.isFinite(value)) {
-      setResult('Erro: número inválido')
+      setResult('Error: Invalid number')
       return
     }
 
@@ -283,12 +288,13 @@ async function chooseOperation(key: string) {
       setFirstOperand(null)
       setPendingOperation(null)
       setStartNewNumber(true)
+      setPercentageInput(null)
     } catch (error) {
       setResult(
-        `Erro: ${
+        `Error: ${
           error instanceof Error
             ? error.message
-            : 'Não foi possível calcular.'
+            : 'Unable to calculate.'
         }`,
       )
     } finally {
@@ -296,54 +302,57 @@ async function chooseOperation(key: string) {
     }
   }
 
+  function deleteLastCharacter() {
+    if (isCalculating) return
 
-function deleteLastCharacter() {
-  if (isCalculating) return;
-
-  if (result.startsWith('Erro:') || result.startsWith('Error:')) {
-    resetCalculator();
-    return;
-  }
-
-  if (pendingOperation !== null && firstOperand !== null) {
-    if (currentInput !== '') {
-      const nextInput = currentInput.slice(0, -1);
-
-      setCurrentInput(nextInput);
-      setExpression(
-        `${formatNumber(firstOperand)} ${getOperationSymbol(pendingOperation)} ${nextInput}`
-      );
-      setStartNewNumber(nextInput === '');
-      return;
+    if (result.startsWith('Error:')) {
+      resetCalculator()
+      return
     }
 
-    const value = formatNumber(firstOperand);
+    if (pendingOperation !== null && firstOperand !== null) {
+      if (currentInput !== '') {
+        const nextInput = currentInput.slice(0, -1)
 
-    setExpression(value);
-    setCurrentInput(value);
-    setResult(value);
-    setFirstOperand(null);
-    setPendingOperation(null);
-    setStartNewNumber(false);
-    return;
+        setCurrentInput(nextInput)
+        setExpression(
+          `${formatNumber(firstOperand)} ${getOperationSymbol(pendingOperation)} ${nextInput}`,
+        )
+        setStartNewNumber(nextInput === '')
+        setPercentageInput(null)
+        return
+      }
+
+      const value = formatNumber(firstOperand)
+
+      setExpression(value)
+      setCurrentInput(value)
+      setResult(value)
+      setFirstOperand(null)
+      setPendingOperation(null)
+      setStartNewNumber(false)
+      setPercentageInput(null)
+      return
+    }
+
+    if (startNewNumber) {
+      setExpression('')
+      setCurrentInput('')
+      setResult('0')
+      setFirstOperand(null)
+      setPendingOperation(null)
+      setStartNewNumber(false)
+      setPercentageInput(null)
+      return
+    }
+
+    const nextInput = currentInput.slice(0, -1)
+
+    setCurrentInput(nextInput)
+    setExpression(nextInput)
+    setResult(nextInput || '0')
+    setPercentageInput(null)
   }
-
-  if (startNewNumber) {
-    setExpression('');
-    setCurrentInput('');
-    setResult('0');
-    setFirstOperand(null);
-    setPendingOperation(null);
-    setStartNewNumber(false);
-    return;
-  }
-
-  const nextInput = currentInput.slice(0, -1);
-
-  setCurrentInput(nextInput);
-  setExpression(nextInput);
-  setResult(nextInput || '0');
-}
 
   function getOperationSymbol(operation: Operation): string {
     const symbols: Record<Operation, string> = {
@@ -358,10 +367,45 @@ function deleteLastCharacter() {
     return symbols[operation]
   }
 
-  function handleKey(key: string) {
-    if (isCalculating) {
+  function calculatePercentage() {
+    if (isCalculating) return
+
+    const valueText = currentInput || result
+
+    if (valueText.startsWith('Error:')) return
+
+    const value = Number(valueText)
+
+    if (!Number.isFinite(value)) return
+
+    if (pendingOperation !== null && firstOperand !== null) {
+      setPercentageInput(formatNumber(value))
+
+      const percentageValue =
+        pendingOperation === 'multiply' || pendingOperation === 'divide'
+          ? value / 100
+          : (firstOperand * value) / 100
+
+      setCurrentInput(String(percentageValue))
+      setExpression(
+        `${formatNumber(firstOperand)} ${getOperationSymbol(pendingOperation)} ${formatNumber(value)}%`,
+      )
+      setStartNewNumber(false)
       return
     }
+
+    const percentageValue = value / 100
+    const formatted = formatNumber(percentageValue)
+
+    setCurrentInput(formatted)
+    setResult(formatted)
+    setExpression(`${formatNumber(value)}%`)
+    setStartNewNumber(true)
+    setPercentageInput(null)
+  }
+
+  function handleKey(key: string) {
+    if (isCalculating) return
 
     if (key === 'AC') {
       resetCalculator()
@@ -388,6 +432,11 @@ function deleteLastCharacter() {
       return
     }
 
+    if (key === '%') {
+      calculatePercentage()
+      return
+    }
+
     if (operationMap[key]) {
       void chooseOperation(key)
     }
@@ -410,7 +459,7 @@ function deleteLastCharacter() {
             {expression || '0'}
           </div>
           <div className="result">
-            {isCalculating ? 'Calculando...' : result}
+            {isCalculating ? 'Calculating...' : result}
           </div>
         </div>
 
