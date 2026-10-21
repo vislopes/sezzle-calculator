@@ -92,70 +92,116 @@ function App() {
     setIsCalculating(false)
   }
 
-  function enterNumber(key: string) {
-    const hasError = result.startsWith('Erro:')
-
-    if (hasError) {
-      setExpression(key === '.' ? '0.' : key)
-      setCurrentInput(key === '.' ? '0.' : key)
-      setResult('0')
-      setFirstOperand(null)
-      setPendingOperation(null)
-      setStartNewNumber(false)
-      return
-    }
-
-    if (key === '.' && !startNewNumber && currentInput.includes('.')) {
-      return
-    }
-
-    if (startNewNumber) {
-      const newValue = key === '.' ? '0.' : key
-
-      setCurrentInput(newValue)
-      setExpression((current) =>
-        pendingOperation === null ? newValue : current + newValue,
-      )
-      setStartNewNumber(false)
-      return
-    }
-
-    const newValue =
-      key === '.'
-        ? currentInput + '.'
-        : currentInput === '0'
-          ? key
-          : currentInput + key
-
-    setCurrentInput(newValue)
-    setExpression((current) => current + key)
+function enterNumber(key: string) {
+  if (result.startsWith('Error:') || result.startsWith('Erro:')) {
+    setResult('0');
+    setExpression('');
+    setCurrentInput(key === '.' ? '0.' : key);
+    setFirstOperand(null);
+    setPendingOperation(null);
+    setStartNewNumber(false);
+    return;
   }
 
-  function chooseOperation(key: string) {
-    const operation = operationMap[key]
-
-    if (!operation || isCalculating) {
-      return
-    }
-
-    const valueText = currentInput || result
-
-    if (valueText.startsWith('Erro:')) {
-      return
-    }
-
-    const value = Number(valueText)
-
-    if (!Number.isFinite(value)) {
-      return
-    }
-
-    setFirstOperand(value)
-    setPendingOperation(operation)
-    setCurrentInput('')
-    setExpression(`${formatNumber(value)} ${key} `)
-    setStartNewNumber(true)
+  if (key === '.' && !startNewNumber && currentInput.includes('.')) {
+    return;
   }
+
+  if (startNewNumber) {
+    const newValue = key === '.' ? '0.' : key;
+
+    setCurrentInput(newValue);
+    setExpression((current) =>
+      pendingOperation === null
+        ? newValue
+        : current + newValue
+    );
+    setStartNewNumber(false);
+    return;
+  }
+
+  const newValue =
+    key === '.'
+      ? currentInput === ''
+        ? '0.'
+        : currentInput + '.'
+      : currentInput === '0'
+        ? key
+        : currentInput + key;
+
+  setCurrentInput(newValue);
+  setExpression((current) =>
+    currentInput === '' && key === '.'
+      ? current + '0.'
+      : current + key
+  );
+}
+
+
+async function chooseOperation(key: string) {
+  const operation = operationMap[key];
+
+  if (!operation || isCalculating) return;
+
+  if (pendingOperation !== null && firstOperand !== null) {
+    if (currentInput === '') {
+      setPendingOperation(operation);
+      setExpression(`${formatNumber(firstOperand)} ${key} `);
+      setStartNewNumber(true);
+      return;
+    }
+
+    const secondOperand = Number(currentInput);
+
+    if (!Number.isFinite(secondOperand)) return;
+
+    setIsCalculating(true);
+
+    try {
+      const answer = await calculateWithAPI(
+        pendingOperation,
+        firstOperand,
+        secondOperand
+      );
+
+      const formatted = formatNumber(answer);
+
+      setFirstOperand(answer);
+      setPendingOperation(operation);
+      setCurrentInput('');
+      setResult(formatted);
+      setExpression(`${formatted} ${key} `);
+      setStartNewNumber(true);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Não foi possível calcular.';
+
+      setResult(`Erro: ${message}`);
+    } finally {
+      setIsCalculating(false);
+    }
+
+    return;
+  }
+
+  const valueText = currentInput || result;
+
+  if (valueText.startsWith('Erro:') || valueText.startsWith('Error:')) {
+    return;
+  }
+
+  const value = Number(valueText);
+
+  if (!Number.isFinite(value)) return;
+
+  setFirstOperand(value);
+  setPendingOperation(operation);
+  setCurrentInput('');
+  setExpression(`${formatNumber(value)} ${key} `);
+  setStartNewNumber(true);
+}
 
   async function calculateResult() {
     if (
@@ -250,30 +296,54 @@ function App() {
     }
   }
 
-  function deleteLastCharacter() {
-    if (isCalculating) {
-      return
-    }
 
-    if (result.startsWith('Erro:')) {
-      setResult('0')
-      setExpression('')
-      setCurrentInput('')
-      setStartNewNumber(false)
-      return
-    }
+function deleteLastCharacter() {
+  if (isCalculating) return;
 
-    if (startNewNumber && pendingOperation === null) {
-      setExpression('')
-      setCurrentInput('')
-      setResult('0')
-      setStartNewNumber(false)
-      return
-    }
-
-    setExpression((current) => current.slice(0, -1))
-    setCurrentInput((current) => current.slice(0, -1))
+  if (result.startsWith('Erro:') || result.startsWith('Error:')) {
+    resetCalculator();
+    return;
   }
+
+  if (pendingOperation !== null && firstOperand !== null) {
+    if (currentInput !== '') {
+      const nextInput = currentInput.slice(0, -1);
+
+      setCurrentInput(nextInput);
+      setExpression(
+        `${formatNumber(firstOperand)} ${getOperationSymbol(pendingOperation)} ${nextInput}`
+      );
+      setStartNewNumber(nextInput === '');
+      return;
+    }
+
+    const value = formatNumber(firstOperand);
+
+    setExpression(value);
+    setCurrentInput(value);
+    setResult(value);
+    setFirstOperand(null);
+    setPendingOperation(null);
+    setStartNewNumber(false);
+    return;
+  }
+
+  if (startNewNumber) {
+    setExpression('');
+    setCurrentInput('');
+    setResult('0');
+    setFirstOperand(null);
+    setPendingOperation(null);
+    setStartNewNumber(false);
+    return;
+  }
+
+  const nextInput = currentInput.slice(0, -1);
+
+  setCurrentInput(nextInput);
+  setExpression(nextInput);
+  setResult(nextInput || '0');
+}
 
   function getOperationSymbol(operation: Operation): string {
     const symbols: Record<Operation, string> = {
@@ -319,7 +389,7 @@ function App() {
     }
 
     if (operationMap[key]) {
-      chooseOperation(key)
+      void chooseOperation(key)
     }
   }
 
