@@ -1,0 +1,22 @@
+
+# Node.js
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+frontend/*.tsbuildinfo
+
+# Go
+backend/*.exe
+backend/*.test
+backend/vendor/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Operating system and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -1,0 +1,176 @@
+
+#root {
+  min-height: 100vh;
+}
+
+.app {
+  min-height: 100vh;
+  padding: 32px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #201733;
+  color: #FFFFFF;
+}
+
+.header {
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 36px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.7px;
+}
+
+.brand-icon {
+  color: #28D2A1;
+  font-size: 27px;
+}
+
+.version {
+  color: #aaa1bc;
+  font-size: 10px;
+  letter-spacing: 2px;
+}
+
+.calculator {
+  width: 100%;
+  max-width: 380px;
+  padding: 24px;
+  border: 1px solid #3a304e;
+  border-radius: 24px;
+  background: #28203b;
+  box-shadow: 0 24px 70px #100b1d80;
+}
+
+.display {
+  min-height: 155px;
+  padding: 20px 16px;
+  margin-bottom: 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-between;
+  background: #201733;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.display-label {
+  align-self: flex-start;
+  color: #aaa1bc;
+  font-size: 10px;
+  letter-spacing: 2px;
+}
+
+.expression {
+  width: 100%;
+  min-height: 36px;
+  color: #FFFFFF;
+  font-size: 25px;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.result {
+  width: 100%;
+  color: #28D2A1;
+  font-size: 30px;
+  font-weight: 700;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.key {
+  min-width: 0;
+  height: 58px;
+  border: 1px solid transparent;
+  border-radius: 13px;
+  background: #352b49;
+  color: #FFFFFF;
+  font: inherit;
+  font-size: 19px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform 120ms ease, filter 120ms ease;
+}
+
+.key:hover {
+  filter: brightness(1.2);
+}
+
+.key:active {
+  transform: scale(0.95);
+}
+
+.key:focus-visible {
+  outline: 2px solid #FFFFFF;
+  outline-offset: 3px;
+}
+
+.key-operator {
+  background: #FF7E00;
+  color: #201733;
+  font-weight: 700;
+}
+
+.key-danger {
+  background: #FE6870;
+  color: #201733;
+  font-weight: 700;
+}
+
+.key-equals {
+  background: #28D2A1;
+  color: #201733;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.calculator-footer {
+  margin: 22px 0 0;
+  color: #8f849f;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-align: center;
+}
+
+.footer {
+  margin-top: 28px;
+  color: #8f849f;
+  font-size: 12px;
+  text-align: center;
+}
+
+@media (max-width: 420px) {
+  .app {
+    padding: 24px 14px;
+  }
+
+  .calculator {
+    padding: 16px;
+  }
+
+  .keypad {
+    gap: 8px;
+  }
+
+  .key {
+    height: 54px;
+  }
+}
