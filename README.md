@@ -176,5 +176,5 @@ The backend achieved **82.3% statement coverage** in the current test run.
 
 ## AI Assistance
 
-AI tools were used during development to assist with implementation planning, code generation, debugging, test creation, and documentation. The resulting application was built and tested locally, with frontend build checks and backend test coverage verified.
+AI tools were used as a supplementary resource during development, mainly for guidance, problem-solving, and documentation. The application was implemented and tested locally, with the frontend build and backend tests successfully verified.
 
