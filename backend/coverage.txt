@@ -1,0 +1,5 @@
+quartzcalculator/calculator.go:8:	calculate		94.1%
+quartzcalculator/main.go:25:		writeJSON		100.0%
+quartzcalculator/main.go:31:		calculateHandler	88.9%
+quartzcalculator/main.go:104:		main			0.0%
+total:					(statements)		82.3%
