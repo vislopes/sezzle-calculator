@@ -1,17 +1,16 @@
-
 # QuartzCalculator
 
-A full-stack calculator application built with React, TypeScript, and Go. The frontend communicates with a REST API backend to perform arithmetic operations.
+A full-stack calculator application built with React, TypeScript, and Go. The React frontend communicates with a Go REST API to perform basic and advanced arithmetic operations.
 
 ## Features
 
 - Addition, subtraction, multiplication, and division.
-- Square root and percentage calculations.
-- Power operation supported by the backend API.
+- Exponentiation, square root, and percentage calculations.
 - Input validation and error handling.
 - Responsive calculator interface.
-- Unit tests for frontend and backend.
-- JSON-based REST API.
+- REST API with JSON request and response formats.
+- Frontend and backend unit tests.
+- Backend test coverage report.
 
 ## Tech Stack
 
@@ -43,7 +42,10 @@ sezzle-calculator/
 │   ├── calculator.go
 │   ├── main_test.go
 │   ├── calculator_test.go
-│   └── go.mod
+│   ├── go.mod
+│   ├── coverage.out
+│   └── coverage.txt
+├── AI_PROMPTS.md
 └── README.md
 ```
 
@@ -56,18 +58,18 @@ sezzle-calculator/
 
 ### 1. Start the backend
 
-Open a terminal:
+Open a terminal from the project root and run:
 
 ```bash
 cd backend
 go run .
 ```
 
-The API will run at `http://localhost:8080`.
+The API will be available at `http://localhost:8080`.
 
 ### 2. Start the frontend
 
-Open a second terminal:
+Open a second terminal from the project root and run:
 
 ```bash
 cd frontend
@@ -79,9 +81,11 @@ Open the local URL printed by Vite, usually `http://localhost:5173`.
 
 ## API Documentation
 
+The backend exposes a REST API for calculator operations.
+
 ### Health Check
 
-`GET /health`
+**Endpoint:** `GET /health`
 
 Example:
 
@@ -91,9 +95,11 @@ curl http://localhost:8080/health
 
 ### Calculate
 
-`POST /calculate`
+**Endpoint:** `POST /calculate`
 
-Request body:
+Send a JSON request containing the operation and its operands.
+
+**Request example:**
 
 ```json
 {
@@ -103,7 +109,7 @@ Request body:
 }
 ```
 
-Successful response:
+**Successful response:**
 
 ```json
 {
@@ -111,7 +117,7 @@ Successful response:
 }
 ```
 
-Example using curl:
+**Example request using curl:**
 
 ```bash
 curl -X POST http://localhost:8080/calculate \
@@ -119,62 +125,95 @@ curl -X POST http://localhost:8080/calculate \
   -d '{"operation":"add","a":5,"b":3}'
 ```
 
-Supported operations:
+### Supported Operations
 
-| Operation | Description |
-|---|---|
-| `add` | Addition |
-| `subtract` | Subtraction |
-| `multiply` | Multiplication |
-| `divide` | Division |
-| `power` | Exponentiation |
-| `sqrt` | Square root |
-| `percentage` | Calculates a percentage |
+| Operation | Description | Example |
+|---|---|---|
+| `add` | Addition | 5 + 3 = 8 |
+| `subtract` | Subtraction | 5 - 3 = 2 |
+| `multiply` | Multiplication | 5 × 3 = 15 |
+| `divide` | Division | 6 ÷ 3 = 2 |
+| `power` | Exponentiation | 2³ = 8 |
+| `sqrt` | Square root | √9 = 3 |
+| `percentage` | Calculates a percentage of a value | 20% of 200 = 40 |
 
-For `sqrt`, provide the number in `a`. For `percentage`, `a` is the base value and `b` is the percentage. For example, 20% of 200 is 40.
+For `sqrt`, provide the number in `a`. For `percentage`, `a` is the base value and `b` is the percentage.
 
-Invalid input, unsupported operations, negative square roots, and division by zero return an error response.
+**Square root example:**
+
+```json
+{
+  "operation": "sqrt",
+  "a": 9
+}
+```
+
+**Percentage example:**
+
+```json
+{
+  "operation": "percentage",
+  "a": 200,
+  "b": 20
+}
+```
+
+The API validates requests and handles invalid input, unsupported operations, division by zero, and square roots of negative numbers by returning error responses.
 
 ## Testing
 
-### Frontend tests
+### Frontend Tests
+
+From the project root:
 
 ```bash
 cd frontend
 npm test
+```
+
+The frontend tests verify calculator component behavior, including calculation results and error handling. API responses are mocked in component tests.
+
+### Frontend Production Build
+
+```bash
+cd frontend
 npm run build
 ```
 
-The frontend tests cover API integration behavior for addition, square root, and division-by-zero error handling. API requests are mocked in component tests.
+### Backend Tests
 
-### Backend tests
+From the project root:
 
 ```bash
 cd backend
 go test ./...
 ```
 
-### Backend coverage report
+### Backend Coverage Report
 
-Generate a coverage report:
+Generate the coverage profile and display function-level coverage:
 
 ```bash
+cd backend
 go test -coverprofile=coverage.out ./...
 go tool cover -func=coverage.out
 ```
 
-The backend achieved **82.3% statement coverage** in the current test run.
+The current backend test report shows **82.3% statement coverage**.
+
+The generated coverage profile is saved in `backend/coverage.out`, and the text report is available in `backend/coverage.txt`.
 
 ## Design Decisions
 
-- The frontend and backend are separated to keep presentation and calculation logic independent.
-- The frontend uses a REST API rather than implementing arithmetic operations entirely in the browser.
-- The backend centralizes arithmetic logic and validates invalid inputs and edge cases.
-- JSON provides a simple and consistent request/response format.
-- Automated tests cover core calculation behavior and API error handling.
-- The interface prioritizes a straightforward calculator workflow and responsive presentation.
+- **Separation of concerns:** The frontend handles the user interface, while the backend centralizes arithmetic logic and input validation.
+- **REST API:** The frontend communicates with the backend through HTTP requests, keeping calculation logic independent of the presentation layer.
+- **JSON communication:** JSON provides a straightforward format for calculator requests and responses.
+- **Input validation:** The backend handles invalid operations and mathematical edge cases, including division by zero and negative square roots.
+- **Testability:** Frontend component tests and backend unit tests help verify expected behavior and error handling.
+- **Maintainability:** React with TypeScript and Go provide clear structures for organizing and maintaining the application.
 
 ## AI Assistance
 
-AI tools were used as a supplementary resource during development, mainly for guidance, problem-solving, and documentation. The application was implemented and tested locally, with the frontend build and backend tests successfully verified.
+AI tools were used occasionally as a supplementary reference during development to clarify specific implementation details, explore edge cases, get suggestions for tests, and understand test coverage reporting.
 
+The application was implemented and tested locally. The specific areas where AI assistance was used are documented in [`AI_PROMPTS.md`](AI_PROMPTS.md).
